@@ -235,6 +235,115 @@ class Decoder(nn.Module):
 
 
 
+# class dnri(nn.Module):
+#     def __init__(
+#         self,
+#         input_dim,
+#         encoder_hidden_dim,
+#         rnn_encoder_dim,
+#         decoder_dim,
+#         num_objects,
+#         num_edge_types,
+#         kl_weight=1.0,
+#         gumbel_temp=0.5,
+#         prior=None,
+#         **kwargs,
+#     ):
+#         super().__init__()
+#         self.encoder = Encoder(
+#             input_dim=input_dim,
+#             hidden_dim=encoder_hidden_dim,
+#             rnn_hidden_dim=rnn_encoder_dim,
+#             num_objects=num_objects,
+#             num_edge_types=num_edge_types,
+#         ).cpu()
+#         self.decoder = Decoder(
+#             input_dim=input_dim,
+#             hidden_dim=decoder_dim,
+#             num_objects=num_objects,
+#             num_edge_types=num_edge_types,
+#         ).cpu()
+
+#         self.kl_weight = kl_weight
+#         self.gumbel_temp = gumbel_temp
+
+#         self.set_prior(prior)
+
+#     def set_prior(self, prior):
+#         if prior:
+#             self.prior = prior
+#             self.log_prior = torch.FloatTensor(np.log(prior)).cpu()
+#         else:
+#             prior = np.zeros(self.encoder.num_edges)
+#             prior.fill(1.0 / self.encoder.num_edges)
+#             self.log_prior = torch.FloatTensor(np.log(prior)).cpu()
+
+#     def forward(self, inputs):
+#         hidden = self.get_initial_hidden(inputs)
+#         timesteps = inputs.size(1)
+
+#         edges_p, edges_enc = [], []
+
+#         for step in range(timesteps - 1):
+#             dinput = inputs[:, step]
+#             prior_logits, posterior_logits, _ = self.encoder(dinput)
+#             prediction, hidden, edge = self.step_forward(
+#                 dinput,
+#                 hidden,
+#                 posterior_logits,
+#                 hard_sample=not self.training,
+#             )
+#             edges_p.append(prior_logits)
+#             edges_enc.append(posterior_logits)
+        
+#         edges_p = torch.stack(edges_p, dim=1)
+#         edges_enc = torch.stack(edges_enc, dim=1)
+
+#         return edges_p, edges_enc, hidden
+
+#     def get_initial_hidden(self, inputs):
+#         return torch.zeros(
+#             inputs.size(0),
+#             inputs.size(2),
+#             self.decoder.hidden_dim,
+#             device=inputs.device,
+#         ).cpu()
+
+#     def step_forward(
+#         self,
+#         inputs,
+#         decoder_hidden,
+#         edge_logits,
+#         hard_sample,
+#         **kwargs,
+#     ):
+#         old_shape = edge_logits.shape
+#         edges = gumbel_softmax(
+#             edge_logits.reshape(-1, self.encoder.num_edges),
+#             tau=self.gumbel_temp,
+#             hard=hard_sample,
+#         ).view(old_shape)
+
+#         predictions, decoder_hidden = self.decoder(
+#             inputs,
+#             decoder_hidden,
+#             edges,
+#         )
+#         return predictions, decoder_hidden, edges
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class dnri(nn.Module):
     def __init__(
         self,
@@ -256,122 +365,13 @@ class dnri(nn.Module):
             rnn_hidden_dim=rnn_encoder_dim,
             num_objects=num_objects,
             num_edge_types=num_edge_types,
-        ).cuda()
+        ).cpu()
         self.decoder = Decoder(
             input_dim=input_dim,
             hidden_dim=decoder_dim,
             num_objects=num_objects,
             num_edge_types=num_edge_types,
-        ).cuda()
-
-        self.kl_weight = kl_weight
-        self.gumbel_temp = gumbel_temp
-
-        self.set_prior(prior)
-
-    def set_prior(self, prior):
-        if prior:
-            self.prior = prior
-            self.log_prior = torch.FloatTensor(np.log(prior)).cuda()
-        else:
-            prior = np.zeros(self.encoder.num_edges)
-            prior.fill(1.0 / self.encoder.num_edges)
-            self.log_prior = torch.FloatTensor(np.log(prior)).cuda()
-
-    def forward(self, inputs):
-        hidden = self.get_initial_hidden(inputs)
-        timesteps = inputs.size(1)
-
-        edges_p, edges_enc = [], []
-
-        for step in range(timesteps - 1):
-            dinput = inputs[:, step]
-            prior_logits, posterior_logits, _ = self.encoder(dinput)
-            prediction, hidden, edge = self.step_forward(
-                dinput,
-                hidden,
-                posterior_logits,
-                hard_sample=not self.training,
-            )
-            edges_p.append(prior_logits)
-            edges_enc.append(posterior_logits)
-        
-        edges_p = torch.stack(edges_p, dim=1)
-        edges_enc = torch.stack(edges_enc, dim=1)
-
-        return edges_p, edges_enc, hidden
-
-    def get_initial_hidden(self, inputs):
-        return torch.zeros(
-            inputs.size(0),
-            inputs.size(2),
-            self.decoder.hidden_dim,
-            device=inputs.device,
-        ).cuda()
-
-    def step_forward(
-        self,
-        inputs,
-        decoder_hidden,
-        edge_logits,
-        hard_sample,
-        **kwargs,
-    ):
-        old_shape = edge_logits.shape
-        edges = gumbel_softmax(
-            edge_logits.reshape(-1, self.encoder.num_edges),
-            tau=self.gumbel_temp,
-            hard=hard_sample,
-        ).view(old_shape)
-
-        predictions, decoder_hidden = self.decoder(
-            inputs,
-            decoder_hidden,
-            edges,
-        )
-        return predictions, decoder_hidden, edges
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-"""class dnri(nn.Module):
-    def __init__(
-        self,
-        input_dim,
-        encoder_hidden_dim,
-        rnn_encoder_dim,
-        decoder_dim,
-        num_objects,
-        num_edge_types,
-        kl_weight=1.0,
-        gumbel_temp=0.5,
-        prior=None,
-        **kwargs,
-    ):
-        super().__init__()
-        self.encoder = Encoder(
-            input_dim=input_dim,
-            hidden_dim=encoder_hidden_dim,
-            rnn_hidden_dim=rnn_encoder_dim,
-            num_objects=num_objects,
-            num_edge_types=num_edge_types,
-        ).cuda()
-        self.decoder = Decoder(
-            input_dim=input_dim,
-            hidden_dim=decoder_dim,
-            num_objects=num_objects,
-            num_edge_types=num_edge_types,
-        ).cuda()
+        ).cpu()
 
         self.kl_weight = kl_weight
         self.gumbel_temp = gumbel_temp
@@ -384,16 +384,16 @@ class dnri(nn.Module):
             inputs.size(2),
             self.decoder.hidden_dim,
             device=inputs.device,
-        ).cuda()
+        ).cpu()
 
     def set_prior(self, prior):
         if prior:
             self.prior = prior
-            self.log_prior = torch.FloatTensor(np.log(prior)).cuda()
+            self.log_prior = torch.FloatTensor(np.log(prior)).cpu()
         else:
             prior = np.zeros(self.encoder.num_edges)
             prior.fill(1.0 / self.encoder.num_edges)
-            self.log_prior = torch.FloatTensor(np.log(prior)).cuda()
+            self.log_prior = torch.FloatTensor(np.log(prior)).cpu()
 
     def nll_gaussian(self, preds, target, variance=5e-5):
         neg_log_p = (preds - target) ** 2 / (2 * variance)
@@ -465,4 +465,4 @@ class dnri(nn.Module):
         loss = loss_nll + self.kl_weight * loss_kl
         loss = loss.mean()
 
-        return loss, loss_nll, loss_kl"""
+        return loss, loss_nll, loss_kl
