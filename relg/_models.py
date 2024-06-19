@@ -362,13 +362,13 @@ class dnri(nn.Module):
             rnn_hidden_dim=rnn_encoder_dim,
             num_objects=num_objects,
             num_edge_types=num_edge_types,
-        ).cuda()
+        ).cpu()
         self.decoder = Decoder(
             input_dim=input_dim,
             hidden_dim=decoder_dim,
             num_objects=num_objects,
             num_edge_types=num_edge_types,
-        ).cuda()
+        ).cpu()
 
         self.kl_weight = kl_weight
         self.gumbel_temp = gumbel_temp
@@ -378,11 +378,11 @@ class dnri(nn.Module):
     def set_prior(self, prior):
         if prior:
             self.prior = prior
-            self.log_prior = torch.FloatTensor(np.log(prior)).cuda()
+            self.log_prior = torch.FloatTensor(np.log(prior)).cpu()
         else:
             prior = np.zeros(self.encoder.num_edges)
             prior.fill(1.0 / self.encoder.num_edges)
-            self.log_prior = torch.FloatTensor(np.log(prior)).cuda()
+            self.log_prior = torch.FloatTensor(np.log(prior)).cpu()
 
     def forward(self, inputs):
         hidden = self.get_initial_hidden(inputs)
@@ -413,7 +413,7 @@ class dnri(nn.Module):
             inputs.size(2),
             self.decoder.hidden_dim,
             device=inputs.device,
-        ).cuda()
+        ).cpu()
 
     def step_forward(
         self,
@@ -606,13 +606,13 @@ class dnri(nn.Module):
             rnn_hidden_dim=rnn_encoder_dim,
             num_objects=num_objects,
             num_edge_types=num_edge_types,
-        ).cuda()
+        ).cpu()
         self.decoder = Decoder(
             input_dim=input_dim,
             hidden_dim=decoder_dim,
             num_objects=num_objects,
             num_edge_types=num_edge_types,
-        ).cuda()
+        ).cpu()
 
         self.kl_weight = kl_weight
         self.gumbel_temp = gumbel_temp
@@ -625,16 +625,16 @@ class dnri(nn.Module):
             inputs.size(2),
             self.decoder.hidden_dim,
             device=inputs.device,
-        ).cuda()
+        ).cpu()
 
     def set_prior(self, prior):
         if prior:
             self.prior = prior
-            self.log_prior = torch.FloatTensor(np.log(prior)).cuda()
+            self.log_prior = torch.FloatTensor(np.log(prior)).cpu()
         else:
             prior = np.zeros(self.encoder.num_edges)
             prior.fill(1.0 / self.encoder.num_edges)
-            self.log_prior = torch.FloatTensor(np.log(prior)).cuda()
+            self.log_prior = torch.FloatTensor(np.log(prior)).cpu()
 
     def nll_gaussian(self, preds, target, variance=5e-5):
         neg_log_p = (preds - target) ** 2 / (2 * variance)

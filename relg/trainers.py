@@ -43,8 +43,8 @@ class Trainer:
 
         for batch in pbar:
             inputs = batch["inputs"]
-            inputs = inputs.cuda(non_blocking=True)
-
+            # inputs = inputs.cuda(non_blocking=True)
+            # inputs = inputs.cpu()
             self.opt.zero_grad()
             loss, nll_loss, kl_loss = self.model.compute_loss(inputs)
             loss.backward()
